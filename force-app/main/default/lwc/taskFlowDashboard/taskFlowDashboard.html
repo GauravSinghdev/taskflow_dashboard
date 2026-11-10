@@ -1,0 +1,79 @@
+<template>
+    <section class="dashboard">
+        <header class="header">
+            <div>
+                <p class="eyebrow">WORKSPACE / TASKS</p>
+                <h1>TaskFlow</h1>
+                <p class="subtitle">Plan, prioritize, and track your work in Salesforce.</p>
+            </div>
+            <lightning-button variant="brand" label="New Task" icon-name="utility:add" onclick={openCreate}></lightning-button>
+        </header>
+
+        <div class="stats">
+            <article class="stat"><span>All tasks</span><strong>{totalCount}</strong><small>Assigned to you</small></article>
+            <article class="stat"><span>Open tasks</span><strong>{openCount}</strong><small>Work in progress</small></article>
+            <article class="stat"><span>Completed</span><strong>{completedCount}</strong><small>Finished tasks</small></article>
+            <article class="stat"><span>Overdue</span><strong class="overdue-number">{overdueCount}</strong><small>Need attention</small></article>
+        </div>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div><h2>Your tasks</h2><p>Showing {filteredTasks.length} of {totalCount} tasks</p></div>
+                <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh tasks" title="Refresh tasks" onclick={refreshTasks}></lightning-button-icon>
+            </div>
+            <div class="filters">
+                <lightning-input type="search" label="Search tasks" placeholder="Search by subject..." value={searchTerm} onchange={handleSearch}></lightning-input>
+                <lightning-combobox label="Status" value={statusFilter} options={statusFilterOptions} onchange={handleStatusFilter}></lightning-combobox>
+                <lightning-combobox label="Priority" value={priorityFilter} options={priorityFilterOptions} onchange={handlePriorityFilter}></lightning-combobox>
+            </div>
+            <template lwc:if={isLoading}><div class="center"><lightning-spinner alternative-text="Loading tasks" size="small"></lightning-spinner></div></template>
+            <template lwc:elseif={errorMessage}><div class="notice error">{errorMessage}</div></template>
+            <template lwc:elseif={hasTasks}>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Task</th><th scope="col">Status</th><th scope="col">Priority</th><th scope="col">Due date</th><th scope="col">Actions</th></tr></thead>
+                        <tbody>
+                            <template for:each={filteredTasks} for:item="task">
+                                <tr key={task.Id}>
+                                    <td><div class="task-subject">{task.Subject}</div><div class="task-desc">{task.Description}</div></td>
+                                    <td><span class={task.statusClass}>{task.statusLabel}</span></td>
+                                    <td><span class={task.priorityClass}>{task.priorityLabel}</span></td>
+                                    <td><span class={task.dueDateClass}> {task.formattedDate} </span></td>
+                                    <td>
+                                        <div class="actions">
+                                            <lightning-button-icon data-id={task.Id} icon-name="utility:edit" alternative-text="Edit task" title="Edit task" onclick={openEdit}></lightning-button-icon>
+                                            <lightning-button-icon data-id={task.Id} icon-name="utility:delete" alternative-text="Delete task" title="Delete task" onclick={handleDelete}></lightning-button-icon>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+            <template lwc:else><div class="empty"><lightning-icon icon-name="utility:task" size="large"></lightning-icon><h3>No matching tasks</h3><p>Create a task or try adjusting your filters.</p></div></template>
+        </section>
+    </section>
+
+    <template lwc:if={isModalOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-label={modalTitle} class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header"><h2 class="slds-text-heading_medium">{modalTitle}</h2></header>
+                <div class="slds-modal__content slds-p-around_medium" id="task-modal-content">
+                    <lightning-input data-field="subject" label="Subject" value={form.subject} maxlength="255" required onchange={handleInput}></lightning-input>
+                    <div class="form-grid">
+                        <lightning-combobox data-field="status" label="Status" value={form.status} options={statusOptions} required onchange={handleInput}></lightning-combobox>
+                        <lightning-combobox data-field="priority" label="Priority" value={form.priority} options={priorityOptions} required onchange={handleInput}></lightning-combobox>
+                    </div>
+                    <lightning-input data-field="dueDate" type="date" label="Due date" value={form.dueDate} onchange={handleInput}></lightning-input>
+                    <lightning-textarea data-field="description" label="Description" value={form.description} onchange={handleInput}></lightning-textarea>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button label="Cancel" onclick={closeModal} disabled={isSaving}></lightning-button>
+                    <lightning-button class="save-button" variant="brand" label={modalSaveLabel} onclick={handleSave} disabled={disableSave}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>
